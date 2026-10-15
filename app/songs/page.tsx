@@ -1,0 +1,5 @@
+import {entries} from "../../lib/catalog";
+import {SiteHeader} from "../catalog-view";
+export const dynamic="force-dynamic";
+export const metadata={title:"Songs in the archive | HeadySports",description:"Explore songs heard on sports broadcasts, with linked appearances and sources."};
+export default async function Songs(){const rows=await entries();const groups=new Map<string,{song:string;artist:string;count:number}>();for(const r of rows){const g=groups.get(r.songSlug);groups.set(r.songSlug,{song:r.song,artist:r.artist,count:(g?.count||0)+1})}return <><SiteHeader/><main className="catalog-page"><p className="eyebrow">THE SONGBOOK</p><h1>Every riff has a record.</h1><p>{groups.size} songs across {rows.length} published broadcast appearances.</p><div className="catalog-grid">{[...groups].sort((a,b)=>a[1].artist.localeCompare(b[1].artist)||a[1].song.localeCompare(b[1].song)).map(([slug,s])=><a className="catalog-card" href={`/songs/${slug}`} key={slug}><span className="eyebrow">{s.artist}</span><h2>{s.song}</h2><p>{s.count} appearance{s.count===1?"":"s"} ↗</p></a>)}</div></main></>}

@@ -1,0 +1,9 @@
+import {database,entries,saveBackup,writeEntry} from "../../../../lib/catalog";
+import {isModerator,sameOrigin} from "../../../../lib/moderation";
+import {getChatGPTUser} from "../../../chatgpt-auth";
+import {jsonBody,parseEntry,record,ValidationError} from "../../../../lib/validation";
+export async function GET(){if(!await isModerator())return Response.json({error:"Owner access required."},{status:403});try{return Response.json(await entries(true),{headers:{"Cache-Control":"no-store"}})}catch{return Response.json({error:"Could not load archive."},{status:503})}}
+async function save(request:Request,editing:boolean){if(!await isModerator()||!sameOrigin(request))return Response.json({error:"Owner access required."},{status:403});try{const raw=record(await jsonBody(request));const input=parseEntry(raw,true);const id=raw.id,version=raw.version;if(editing){if(!Number.isSafeInteger(id)||Number(id)<1||typeof version!=="string")throw new ValidationError("Invalid entry identifier.");const current=await database().prepare("SELECT version FROM sightings WHERE id=?").bind(id).first<{version:string}>();if(!current)return Response.json({error:"Entry not found."},{status:404});if(current.version!==version)return Response.json({error:"This entry changed elsewhere. Refresh and retry."},{status:409});}
+const backup=await saveBackup(editing?`before-edit-${id}`:"before-create");const user=await getChatGPTUser();const result=await writeEntry(input,{...(editing?{id:Number(id),version:String(version)}:{}),reviewer:user!.userId});return Response.json({ok:true,backup,...result},{status:editing?200:201});}catch(e){return Response.json({error:e instanceof ValidationError?e.message:"Could not save. No edit is allowed without a successful backup."},{status:e instanceof ValidationError?400:503})}}
+export async function POST(r:Request){return save(r,false)}
+export async function PATCH(r:Request){return save(r,true)}

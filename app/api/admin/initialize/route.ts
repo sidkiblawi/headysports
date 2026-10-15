@@ -1,0 +1,11 @@
+import {env} from "cloudflare:workers";
+import {seedArchive} from "../../../../lib/seed-archive";
+import {database,entries,entryStatements,saveBackup} from "../../../../lib/catalog";
+import {isModerator,sameOrigin} from "../../../../lib/moderation";
+import {parseEntry} from "../../../../lib/validation";
+export async function POST(request:Request){
+ const db=database();const done=await db.prepare("SELECT value FROM archive_settings WHERE key='catalog-v1'").first();if(done)return Response.json({ok:true,alreadyInitialized:true});
+ const secret=env.ARCHIVE_MIGRATION_KEY;const token=request.headers.get("authorization");const owner=await isModerator()&&sameOrigin(request);if(!owner&&(!secret||token!==`Bearer ${secret}`))return Response.json({error:"Owner access required."},{status:403});
+ try{const backup=await saveBackup("before-catalog-migration");for(const old of await entries(true)){if(old.songSlug&&old.eventSlug&&old.externalKey)continue;const input=parseEntry({...old,cueType:old.cueType||"Commercial outro",evidence:old.evidence||"fan",sources:old.sources},true);const write=await entryStatements(input,{id:old.id,version:old.version});await db.batch([...write.statements,db.prepare("UPDATE sightings SET external_key=COALESCE(external_key,?) WHERE id=?").bind(`legacy:${old.id}`,old.id)]);}
+ for(const seed of seedArchive){const cueType=seed.id===-4||seed.id===-12?"Feature / highlights":seed.id===-8?"Show theme":"Commercial outro";const sources=[{label:"Published report",url:seed.source,kind:"reporting"},...(seed.supportingSources||[]).map(s=>({...s,kind:s.label.toLowerCase().includes("clip")?"clip":"reporting"}))];const input=parseEntry({...seed,moderationStatus:"approved",evidence:"reporting",cueType,sources},true);const write=await entryStatements(input,{externalKey:`seed:${seed.id}`});await db.batch(write.statements);}
+ await db.prepare("INSERT INTO archive_settings(key,value) VALUES('catalog-v1',?) ON CONFLICT(key) DO NOTHING").bind(new Date().toISOString()).run();return Response.json({ok:true,seeded:seedArchive.length,backup});}catch{return Response.json({error:"Migration could not finish. Existing records and the pre-migration backup are retained. Retrying is safe."},{status:503})}}

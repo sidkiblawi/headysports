@@ -1,0 +1,5 @@
+import {isModerator,sameOrigin} from "../../../../lib/moderation";
+import {getChatGPTUser} from "../../../chatgpt-auth";
+import {jsonBody,record,ValidationError} from "../../../../lib/validation";
+import {restoreBackup} from "../../../../lib/import-archive";
+export async function POST(request:Request){if(!await isModerator()||!sameOrigin(request))return Response.json({error:"Owner access required."},{status:403});try{const b=record(await jsonBody(request,3000000));if(b.mode!=="preview"&&b.mode!=="restore")throw new ValidationError("Choose preview or restore.");if(b.mode==="restore"&&b.confirm!==true)throw new ValidationError("Confirm the import first.");const user=await getChatGPTUser();return Response.json(await restoreBackup(b.backup,user!.userId,b.mode==="preview"));}catch(e){return Response.json({error:e instanceof ValidationError?e.message:"Import could not finish. A pre-import backup is retained; some batches may have saved. Refresh the archive before retrying."},{status:e instanceof ValidationError?400:503})}}

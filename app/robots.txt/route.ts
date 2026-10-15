@@ -1,0 +1,1 @@
+export function GET(){return new Response("User-agent: *\nAllow: /\nDisallow: /admin\nDisallow: /api/admin/\nSitemap: https://www.headysports.com/sitemap.xml\n",{headers:{"Content-Type":"text/plain"}})}
