@@ -1,6 +1,6 @@
 # Managing the HeadySports archive
 
-Open `/admin` and sign in with the owner ChatGPT account. Access is restricted to the address configured by the private `MODERATOR_EMAIL` environment setting.
+Open `/admin` and sign in with the owner ChatGPT account. Access is restricted to the owner address configured by private `MODERATOR_EMAIL` and the comma-separated additional addresses in private `ADMIN_EMAILS`. Each admin signs in with their own ChatGPT account using the authorized email. Additional admins have the same archive editing, publishing, export and restore access as the owner; these settings do not grant access to the hosting account.
 
 Use **Add appearance** to enter a song, artist, event, broadcast date, network, cue type and evidence. Add one or more source links. Drafts and pending submissions remain private; choose Published to show an entry immediately. Editing content does not require a deployment. Concurrent edits are detected; reload before retrying a stale edit.
 
