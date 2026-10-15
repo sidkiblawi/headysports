@@ -19,3 +19,11 @@ Restore accepts the exported version-1 JSON format (up to 500 entries and 3 MB p
 Run the starter's local preview with mock authentication, then `python3 tests/catalog_integration.py`. The integration test mutates only the local preview database and verifies owner access, publishing, validation, public/private isolation, optimistic concurrency, exports and restore. Never point it at production.
 
 D1 schema migrations live in `drizzle/`. The private `ARCHIVE_MIGRATION_KEY` is a temporary bootstrap credential for `/api/admin/initialize`; initialization is idempotent and closes token-based migration after its database marker is written. Normal administration uses owner sign-in.
+
+## Community confirmations
+
+In the admin review queue, screen a sighting and choose **Screened: show for community review**. Only explicitly screened entries appear in the public **Heard it too?** section; pending records stay out of the main archive. Hide it again with **Hide from community review**. Editing or restoring an entry hides it and changes its revision, so old confirmations do not count toward changed claims.
+
+Visitors confirm without signing in. Counts are never public. Five confirmations produce **★ Community corroborated** and close further voting for that revision. This badge does not publish an entry or change its evidence label. A secure browser cookie and private keyed network hashes block repeats from a browser or IP; shared networks can count only once per sighting. Limits allow 20 accepted confirmations per network per hour. Anonymous votes are informal corroboration and cannot guarantee distinct people. Raw IP addresses are not stored in the voting table; hashes are private and never exported through the public API.
+
+`COMMUNITY_VOTE_SECRET` is a private runtime secret. JSON content backups include the visibility flag and badge state for reference, but restore requires screening again and does not restore anonymous voting identifiers or confirmations. The `community_votes` table is separate from portable content backups.

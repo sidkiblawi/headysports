@@ -29,6 +29,20 @@
       "when": 1792062795427,
       "tag": "0003_remove_owner_test",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1792093978152,
+      "tag": "0004_free_demogoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1792094007511,
+      "tag": "0005_clammy_felicia_hardy",
+      "breakpoints": true
     }
   ]
 }
