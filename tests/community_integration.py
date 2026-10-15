@@ -18,8 +18,7 @@ owner.open(BASE+'/signin-with-chatgpt?return_to=/admin').read()
 name='Community QA '+str(uuid.uuid4())
 assert req('/api/sightings',{'song':name})[0]==201
 row=next(r for r in req('/api/admin/entries',who=owner)[1] if r['song']==name);id=row['id']
-assert all(r['id']!=id for r in req('/api/community')[1])
-assert req('/api/community',{'id':id})[0]==404
+assert any(r['id']==id for r in req('/api/community')[1]),'New submissions appear immediately'
 payload={'id':id,'version':row['version'],'visible':True}
 assert req('/api/admin/community',payload,'PATCH')[0]==403
 assert req('/api/admin/community',payload,'PATCH',owner)[0]==200
@@ -34,15 +33,15 @@ for n in range(1,6):
  assert req('/api/community',{'id':id},who=client(),ip='192.0.2.'+str(n))[1]['corroborated']==(n==5)
 assert req('/api/community',{'id':id},who=client(),ip='203.0.113.10')[1]=={'corroborated':True,'confirmed':False}
 assert all(r['id']!=id for r in req('/api/sightings')[1]),'Votes must not publish'
-# Editing invalidates visibility and starts a new revision.
+# Editing starts a new revision, resetting confirmations while keeping visibility.
 row=next(r for r in req('/api/admin/entries',who=owner)[1] if r['id']==id)
 assert row['communityCorroborated']
 row.update(notes='Edited local QA')
 assert req('/api/admin/entries',row,'PATCH',owner)[0]==200
-assert all(r['id']!=id for r in req('/api/community')[1])
+assert any(r['id']==id for r in req('/api/community')[1])
 row=next(r for r in req('/api/admin/entries',who=owner)[1] if r['id']==id)
 assert not row['communityCorroborated']
 assert req('/api/admin/community',{'id':id,'version':row['version'],'visible':True},'PATCH',owner)[0]==200
 assert not next(r for r in req('/api/community')[1] if r['id']==id)['corroborated']
 assert req('/api/admin/community',{'id':id,'version':row['version'],'visible':False},'PATCH',owner)[0]==200
-print('PASS: screened visibility; anonymous voting; repeat browser/network denial; five-vote cap; hidden counts; no auto-publication; edit reset; admin access; cross-origin denial')
+print('PASS: automatic community visibility; anonymous voting; repeat browser/network denial; five-vote cap; hidden counts; no auto-publication; edit reset; admin access; cross-origin denial')
