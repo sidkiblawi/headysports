@@ -8,6 +8,13 @@
       "when": 1792034414005,
       "tag": "0000_stale_lizard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1792034840573,
+      "tag": "0001_safe_thanos",
+      "breakpoints": true
     }
   ]
 }
