@@ -14,7 +14,10 @@ for (const moderationStatus of ['approved','rejected','pending']) {
  assert.equal(result.evidence,'fan');
  assert.deepEqual(result.sources,[]);
 }
-const incomplete=parseEntry({});
+for(const key of ["song","artist","game","sport","network"]){
+ for(const value of [undefined,"","   "]){assert.throws(()=>parseEntry({...fan,[key]:value}),ValidationError);}
+}
+const incomplete=parseEntry({...fan,song:"",artist:"",game:"",sport:"",network:""},true);
 assert.equal(parseEntry({...incomplete,moderationStatus:'rejected'},true).moderationStatus,'rejected');
 assert.throws(()=>parseEntry({...incomplete,moderationStatus:'approved'},true),ValidationError);
 for(const evidence of ['clip','reporting']) {
