@@ -16,7 +16,7 @@ def req(path,data=None,method=None,who=visitor,ip='192.0.2.1',origin=BASE):
   return e.code,body
 owner.open(BASE+'/signin-with-chatgpt?return_to=/admin').read()
 name='Community QA '+str(uuid.uuid4())
-assert req('/api/sightings',{'song':name})[0]==201
+assert req('/api/sightings',{'song':name,'artist':'QA Artist','game':'Local QA game','sport':'MLB','network':'FOX'})[0]==201
 row=next(r for r in req('/api/admin/entries',who=owner)[1] if r['song']==name);id=row['id']
 assert any(r['id']==id for r in req('/api/community')[1]),'New submissions appear immediately'
 payload={'id':id,'version':row['version'],'visible':True}
