@@ -41,3 +41,26 @@ for(const field of ['song','artist','game','sport','network'])assert.equal((awai
 sqlite.prepare("UPDATE sightings SET moderation_status='rejected'").run();
 const privateRepeat=await submit({...base,differentMoment:true,moment:'Bottom of the 7th'});assert.equal(privateRepeat.status,409);assert.equal(privateRepeat.body.duplicate,undefined);
 console.log('PASS: eight simultaneous submissions create one row; normalized matching; confirmations target same ID; distinct moments; legacy reports; required fields; private rows protected');
+
+const {eventIdentity}=await import(moduleURL('lib/event-matching.ts'));
+assert.equal(eventIdentity('LAD @ MIL','MLB'),eventIdentity('Brewers–Dodgers','MLB'));
+assert.equal(eventIdentity('Green Bay Packers vs Chicago Bears','NFL'),eventIdentity('CHI at GB','NFL'));
+assert.equal(eventIdentity('Boston Celtics vs Milwaukee Bucks','NBA'),eventIdentity('MIL @ BOS','NBA'));
+assert.notEqual(eventIdentity('LAD @ MIL Game 1','MLB'),eventIdentity('MIL vs LAD Game 2','MLB'));
+assert.notEqual(eventIdentity('Giants vs Cardinals','MLB'),eventIdentity('Giants vs Cardinals','NFL'));
+const aliases=['LAD @ MIL','Brewers vs Dodgers','Los Angeles Dodgers at Milwaukee Brewers','MIL–LAD'];
+const aliasResults=await Promise.all(Array.from({length:8},(_,i)=>submit({...base,date:'2020-10-17',game:aliases[i%4]})));
+assert.equal(aliasResults.filter(r=>r.status===201).length,1);
+assert.equal(aliasResults.filter(r=>r.status===409&&!r.body.duplicate.possible).length,7);
+const aliasId=aliasResults.find(r=>r.status===201).body.id;
+const uncertain={...base,date:'2020-10-17',game:'NLCS baseball broadcast'};
+const warning=await submit(uncertain);assert.equal(warning.status,409);assert.equal(warning.body.duplicate.possible,true);
+assert.equal((await submit({...uncertain,differentGames:[aliasId]})).status,201);
+// "Different game" cannot bypass a confident alias match.
+assert.equal((await submit({...base,date:'2020-10-17',game:'MIL vs LAD',differentGames:[aliasId]})).status,409);
+const {GET:options}=await import(moduleURL('app/api/submission-options/route.ts'));
+const suggestions=await (await options(new Request('https://example.com/api/submission-options?date=2020-10-17'))).json();
+assert(suggestions.some(r=>r.game==='LAD @ MIL'));
+assert(suggestions.every(r=>r.date==='2020-10-17'));
+const hidden=await (await options(new Request('https://example.com/api/submission-options?date=2020-10-16'))).json();assert.equal(hidden.length,0);
+console.log('PASS: sport-scoped team aliases, reversed team order, preserved game numbers, simultaneous aliases, uncertain-match escape, private-safe suggestions');

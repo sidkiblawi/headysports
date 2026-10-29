@@ -1,0 +1,3 @@
+import {database} from '../../../lib/catalog';
+import {validDate} from '../../../lib/validation';
+export async function GET(request:Request){const date=new URL(request.url).searchParams.get('date')||'';if(!validDate(date))return Response.json({error:'Invalid date.'},{status:400});try{const rows=await database().prepare("SELECT DISTINCT game,sport,date FROM sightings WHERE date=? AND (moderation_status='approved' OR (moderation_status='pending' AND community_visible=1)) ORDER BY game LIMIT 250").bind(date).all();return Response.json(rows.results,{headers:{'Cache-Control':'no-store'}})}catch{return Response.json({error:'Game suggestions are temporarily unavailable.'},{status:503})}}
