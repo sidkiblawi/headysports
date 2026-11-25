@@ -1,6 +1,6 @@
 # HeadySports: migrate to the owner's Cloudflare account
 
-Status: prepared and tested locally, not deployed. The existing OpenAI Sites deployment and DNS are unchanged.
+Status: staging is deployed and tested in the owner’s Cloudflare account. The public domain still uses OpenAI Sites. See STATUS.md for completed transfers and remaining cutover steps.
 
 Destination account: `9ab190a0293698f9d4fc3f6d8375200f`.
 Initial moderator: `sidkiblawi@gmail.com`.
