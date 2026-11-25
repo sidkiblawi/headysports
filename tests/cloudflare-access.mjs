@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
+import path from 'node:path';
+import ts from 'typescript';
+import {generateKeyPair,SignJWT,createLocalJWKSet,exportJWK} from 'jose';
+const archiveURL='data:text/javascript;base64,'+Buffer.from(ts.transpileModule(readFileSync('lib/admin-access.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText).toString('base64');
+let code=ts.transpileModule(readFileSync('lib/cloudflare-access.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+code=code.replace(/from ['"]jose['"]/,'from '+JSON.stringify(pathToFileURL(path.resolve('node_modules/jose/dist/webapi/index.js')).href)).replace(/from ['"]\.\/admin-access['"]/,'from '+JSON.stringify(archiveURL));
+const {verifyAccessToken,cloudflareRequest}=await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+const {privateKey,publicKey}=await generateKeyPair('RS256');const jwk=await exportJWK(publicKey);jwk.kid='test';const key=createLocalJWKSet({keys:[jwk]});
+const settings={AUTH_PROVIDER:'cloudflare-access',CF_ACCESS_TEAM_DOMAIN:'headysports.cloudflareaccess.com',CF_ACCESS_AUD:'test-app',MODERATOR_EMAIL:'sidkiblawi@gmail.com'};
+async function token({email=settings.MODERATOR_EMAIL,aud='test-app',issuer='https://'+settings.CF_ACCESS_TEAM_DOMAIN,expiry='5m'}={}){return new SignJWT({email}).setProtectedHeader({alg:'RS256',kid:'test'}).setSubject('admin-id').setIssuer(issuer).setAudience(aud).setIssuedAt().setExpirationTime(expiry).sign(privateKey)}
+const valid=await token();assert.equal((await verifyAccessToken(valid,settings,key)).email,settings.MODERATOR_EMAIL);
+for(const options of [{email:'other@example.com'},{aud:'another-app'},{issuer:'https://evil.example'},{expiry:'-1m'}])await assert.rejects(verifyAccessToken(await token(options),settings,key));
+const spoof={'oai-authenticated-user-id':'spoof','oai-authenticated-user-email':settings.MODERATOR_EMAIL,'cf-access-authenticated-user-email':settings.MODERATOR_EMAIL};
+const publicRequest=await cloudflareRequest(new Request('https://example.com/',{headers:spoof}),settings);assert.equal(publicRequest.headers.get('oai-authenticated-user-email'),null);
+assert.equal((await cloudflareRequest(new Request('https://example.com/admin',{headers:spoof}),settings)).status,401);
+assert.equal((await cloudflareRequest(new Request('https://example.com/api/admin/entries'),{AUTH_PROVIDER:'cloudflare-access'})).status,503);
+const verifier=(t,s)=>verifyAccessToken(t,s,key);
+const approved=await cloudflareRequest(new Request('https://example.com/api/admin/entries',{headers:{...spoof,'cf-access-jwt-assertion':valid}}),settings,verifier);assert(approved instanceof Request);assert.equal(approved.headers.get('oai-authenticated-user-id'),'admin-id');
+const denied=await cloudflareRequest(new Request('https://example.com/admin',{headers:{'cf-access-jwt-assertion':await token({email:'other@example.com'})}}),settings,verifier);assert.equal(denied.status,403);
+const sitesRequest=new Request('https://example.com/admin',{headers:spoof});assert.equal(await cloudflareRequest(sitesRequest,{}),sitesRequest);
+assert.equal((await cloudflareRequest(new Request('https://example.com/signin-with-chatgpt?return_to=https://evil.example'),settings)).headers.get('location'),'https://example.com/admin');
+console.log('PASS: valid Access login; issuer/audience/expiry/email checks; spoofed identity rejected; API/direct-URL protection; missing-config lockout; Sites compatibility');

@@ -1,0 +1,39 @@
+{
+  "name": "headysports",
+  "account_id": "9ab190a0293698f9d4fc3f6d8375200f",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": true,
+  "preview_urls": false,
+  "vars": {
+    "AUTH_PROVIDER": "cloudflare-access",
+    "MODERATOR_EMAIL": "sidkiblawi@gmail.com",
+    "CF_ACCESS_TEAM_DOMAIN": "REPLACE.cloudflareaccess.com",
+    "CF_ACCESS_AUD": "REPLACE_WITH_ACCESS_APPLICATION_AUDIENCE"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "headysports",
+      "database_id": "00000000-0000-4000-8000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "BUCKET",
+      "bucket_name": "headysports-backups"
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "headysports.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.headysports.com",
+      "custom_domain": true
+    }
+  ]
+}
