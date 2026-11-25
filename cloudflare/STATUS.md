@@ -15,14 +15,23 @@ Staging: https://headysports.headysports-sidkiblawi.workers.dev
 - Assigned nameservers: christina.ns.cloudflare.com and viddy.ns.cloudflare.com.
 - A live parent DS record for the Squarespace DNSSEC keys exists. The owner must disable DNSSEC in Squarespace and removal must be verified before changing nameservers. Do not copy that DS record to the new zone.
 
-## Still needed
+## Production cutover completed
 
-1. Completed: the temporary Sites transfer endpoint was removed, its runtime credentials deleted, and the cleanup deployment succeeded. It now returns 404.
-2. Have the owner disable Squarespace DNSSEC; verify the parent DS record disappears, allowing for caches.
-3. Have the owner replace the four Squarespace nameservers with the two Cloudflare nameservers. Squarespace’s current plugin has no DNS/nameserver management endpoints.
-4. Recheck that the Cloudflare zone becomes active and the old site still serves correctly using the preserved records. Compare a complete Squarespace DNS export if the owner has records beyond the screenshots provided.
-5. Before routing production to the Worker, prevent divergent writes, refresh the DB and any backup delta if anything changed, configure Access on headysports.com and www, and attach both Worker custom domains. Verify TLS, old deep links, forms, backups, and admin actions, then reopen writes. Keep rollback available.
-6. Update this status and merge the migration PR only after production acceptance. Do not delete the old Site or historical data yet.
+- Squarespace DNSSEC was disabled by the owner. Google and Cloudflare resolvers confirmed no parent DS record before the nameserver change.
+- The owner changed nameservers to christina.ns.cloudflare.com and viddy.ns.cloudflare.com; the Cloudflare zone is active.
+- Both headysports.com and www.headysports.com are attached to the headysports Worker with HTTPS. Only the three old website A/CNAME records were replaced; security/verification TXT and Domain Connect records remain.
+- Access now covers both production hostnames and the staging hostname. The audience and exact moderator email allowlist are unchanged.
+- The legacy Sites app was placed in read-only mode before the final data comparison. All six tables match the destination byte-for-byte after canonicalization and SHA-256 comparison. Legacy source version: de555d2e9e4a8ca5a74b7b1f9088dc1a163121fa; deployment appgdep_6b063eebe0108191b2061168b009f966. MIGRATION_READ_ONLY=1 prevents source writes.
+- Production browser checks passed on both hostnames: homepage 200, required fields, existing-game suggestions, duplicate prompt, repeat-moment field, anonymous admin redirect, forged identity-header rejection, zero JavaScript errors.
+- The temporary data exporter was removed and its two runtime credentials deleted before cutover. Its path returns 404.
+
+## Follow-up and rollback
+
+Some recursive resolvers cached the old website A records with the previous four-hour TTL. Those visitors can temporarily reach the old read-only copy; they must retry writes once their DNS cache refreshes. Leave the legacy write block enabled to avoid split data. Do not delete the old Site or private snapshots during this propagation/rollback window.
+
+DNSSEC is currently off during DNS propagation. Restore it later using Cloudflare’s newly generated DS record at the Squarespace registrar, not the old Squarespace DS value. Wait for old nameserver caches to clear before publishing a new DS record.
+
+For rollback, preserve all writes now accepted by the Cloudflare D1 database; compare and reconcile them before returning traffic to the old copy. Simply restoring old DNS and unblocking the old database would discard post-cutover changes. The old Site is retained, not removed.
 
 ## Plugin deployment note
 

@@ -1,6 +1,6 @@
 # HeadySports: migrate to the owner's Cloudflare account
 
-Status: staging is deployed and tested in the owner’s Cloudflare account. The public domain still uses OpenAI Sites. See STATUS.md for completed transfers and remaining cutover steps.
+Status: production is deployed in the owner’s Cloudflare account on headysports.com and www.headysports.com. The old Sites copy is read-only for rollback. See STATUS.md for verification and DNS-propagation notes.
 
 Destination account: `9ab190a0293698f9d4fc3f6d8375200f`.
 Initial moderator: `sidkiblawi@gmail.com`.
@@ -61,4 +61,4 @@ At the agreed cutover window, temporarily stop new submissions, votes, and admin
 
 Keep the old Site and a verified export available through the rollback window, but block writes there so the two copies cannot diverge. Do not delete old DNS verification TXT records until the new hosting is confirmed and rollback is no longer needed. If rolling back after any writes reached the new site, reconcile the data first; changing DNS alone would lose those updates.
 
-No nameserver, DNS, custom-domain, or traffic switch has been executed by this preparation work.
+The production cutover has been executed; the instructions above remain as the migration and rollback runbook. Do not rerun the empty-database import against production.
