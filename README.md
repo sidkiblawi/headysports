@@ -1,3 +1,5 @@
+> **Production operations:** Start with [HANDOFF.md](HANDOFF.md). HeadySports now runs in the owner’s Cloudflare account. The starter/Sites lifecycle text below is historical and is not the production deployment procedure.
+
 # vinext-starter
 
 A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
